@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "frontend": "python -m garmin_coach.web"
+  },
+  "dependencies": {
+    "axios": "^1.15.2",
+    "recharts": "^3.8.1"
+  }
+}

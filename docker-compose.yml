@@ -1,0 +1,8 @@
+services:
+  garmin-coach:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+    command: python -m garmin_coach.cli recommend --days 14

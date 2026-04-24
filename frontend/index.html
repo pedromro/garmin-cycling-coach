@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Garmin Cycling Coach</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Garmin Cycling Coach</p>
+          <h1 id="page-title">Daily recommendation</h1>
+        </div>
+        <div class="top-actions" aria-label="Dashboard controls">
+          <select id="day-select" aria-label="Select day"></select>
+          <div class="periods" role="group" aria-label="Select period">
+            <button class="period-button" type="button" data-days="7">7d</button>
+            <button class="period-button" type="button" data-days="15">15d</button>
+            <button class="period-button" type="button" data-days="30">1m</button>
+            <button class="period-button is-active" type="button" data-days="90">3m</button>
+            <button class="period-button" type="button" data-days="183">6m</button>
+            <button class="period-button" type="button" data-days="365">1y</button>
+            <button class="period-button" type="button" data-days="730">2y</button>
+          </div>
+          <button id="refresh-button" class="primary-button" type="button">Refresh Garmin</button>
+          <div class="segmented" role="tablist" aria-label="Dashboard view">
+            <button class="segmented-button is-active" type="button" data-view="overview">Overview</button>
+            <button class="segmented-button" type="button" data-view="fitness">Fitness</button>
+            <button class="segmented-button" type="button" data-view="training">Training</button>
+            <button class="segmented-button" type="button" data-view="recovery">Recovery</button>
+          </div>
+          <span id="sync-status" class="sync-status" role="status">Loading data</span>
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="Recommendation summary">
+        <article class="readiness-panel">
+          <div class="gauge" aria-label="Readiness score">
+            <svg viewBox="0 0 120 120" role="img">
+              <circle class="gauge-track" cx="60" cy="60" r="48"></circle>
+              <circle id="gauge-value" class="gauge-value" cx="60" cy="60" r="48"></circle>
+            </svg>
+            <div class="gauge-label">
+              <strong id="readiness-score">--</strong>
+              <span id="readiness-label">--</span>
+            </div>
+          </div>
+          <div class="recommendation-copy">
+            <p class="label">Workout</p>
+            <h2 id="workout-title">--</h2>
+            <dl>
+              <div>
+                <dt>Duration</dt>
+                <dd id="duration">--</dd>
+              </div>
+              <div>
+                <dt>Power</dt>
+                <dd id="power-target">--</dd>
+              </div>
+            </dl>
+          </div>
+        </article>
+
+        <article class="metric-panel">
+          <span class="label">7 day volume</span>
+          <strong id="weekly-minutes">--</strong>
+          <small>minutes</small>
+        </article>
+        <article class="metric-panel">
+          <span class="label">Distance</span>
+          <strong id="weekly-distance">--</strong>
+          <small>km this week</small>
+        </article>
+        <article class="metric-panel">
+          <span class="label">Hard days</span>
+          <strong id="hard-days">--</strong>
+          <small>last 3 days</small>
+        </article>
+        <article class="metric-panel">
+          <span class="label">Load spike</span>
+          <strong id="load-spike">--</strong>
+          <small>vs previous week</small>
+        </article>
+        <article class="metric-panel">
+          <span class="label">Form</span>
+          <strong id="form-score">--</strong>
+          <small>fitness minus fatigue</small>
+        </article>
+      </section>
+
+      <section class="view is-visible" data-view-panel="overview">
+        <div class="content-grid">
+          <article class="panel wide">
+            <div class="panel-heading">
+              <div>
+                <p class="label">Training load</p>
+                <h2>Ride minutes by day</h2>
+              </div>
+              <span id="selected-day-chip" class="chip">--</span>
+            </div>
+            <div id="volume-chart" class="chart" aria-label="Ride minutes bar chart"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">Reasons</p>
+            <ul id="reason-list" class="reason-list"></ul>
+          </article>
+
+          <article class="panel">
+            <p class="label">Tomorrow</p>
+            <p id="tomorrow" class="large-copy">--</p>
+          </article>
+
+          <article class="panel">
+            <p class="label">Over 45 focus</p>
+            <dl id="masters-details" class="detail-list"></dl>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="fitness">
+        <div class="content-grid">
+          <article class="panel wide">
+            <div class="panel-heading">
+              <div>
+                <p class="label">Fitness trend</p>
+                <h2>Fitness, fatigue, and form</h2>
+              </div>
+              <span id="stress-chip" class="chip">--</span>
+            </div>
+            <div id="fitness-chart" class="chart" aria-label="Fitness fatigue form chart"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">Load model</p>
+            <dl id="fitness-details" class="detail-list"></dl>
+          </article>
+
+          <article class="panel">
+            <p class="label">Progression</p>
+            <div id="progression-chart" class="chart small-chart" aria-label="Cumulative progress chart"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="training">
+        <div class="content-grid">
+          <article class="panel wide">
+            <div class="panel-heading">
+              <div>
+                <p class="label">Power</p>
+                <h2>Average and normalized power</h2>
+              </div>
+            </div>
+            <div id="power-chart" class="chart" aria-label="Power line chart"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">FTP zones</p>
+            <div id="zone-list" class="zone-list"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">Intensity balance</p>
+            <div id="intensity-list" class="zone-list"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">Power zones</p>
+            <div id="time-in-zones" class="zone-list"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">Selected ride</p>
+            <dl id="ride-details" class="detail-list"></dl>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="recovery">
+        <div class="content-grid">
+          <article class="panel wide">
+            <div class="panel-heading">
+              <div>
+                <p class="label">Recovery</p>
+                <h2>Sleep, HRV, and body battery</h2>
+              </div>
+            </div>
+            <div id="recovery-chart" class="chart" aria-label="Recovery trend chart"></div>
+          </article>
+
+          <article class="panel">
+            <p class="label">Selected recovery</p>
+            <dl id="recovery-details" class="detail-list"></dl>
+          </article>
+
+          <article class="panel">
+            <p class="label">Status</p>
+            <p id="status-copy" class="large-copy">--</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
