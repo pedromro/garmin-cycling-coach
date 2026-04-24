@@ -1,0 +1,11 @@
+.env
+.venv/
+.venv_windows/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+node_modules/
+data/*.sqlite3
+reports/*.md
