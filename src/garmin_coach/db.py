@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
-from typing import Iterable
+from typing import Any
 from .models import DailyMetrics
 
 SCHEMA = """
@@ -71,7 +71,7 @@ class CoachDB:
         )
         self.conn.commit()
 
-    def last_days(self, limit: int) -> list[DailyMetrics]:
+    def last_days(self, limit: int, include_raw: bool = False) -> list[DailyMetrics]:
         rows = self.conn.execute(
             "SELECT * FROM daily_metrics ORDER BY day DESC LIMIT ?", (limit,)
         ).fetchall()
@@ -85,6 +85,109 @@ class CoachDB:
                 cycling_minutes=r["cycling_minutes"] or 0, cycling_distance_km=r["cycling_distance_km"] or 0,
                 cycling_avg_hr=r["cycling_avg_hr"], cycling_avg_power=r["cycling_avg_power"],
                 cycling_np=r["cycling_np"], cycling_training_effect=r["cycling_training_effect"],
-                raw=json.loads(r["raw_json"] or "{}"),
+                raw=json.loads(r["raw_json"] or "{}") if include_raw else None,
             ))
         return out
+
+    def activity_power_records(self, limit: int) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT day, raw_json FROM daily_metrics ORDER BY day DESC LIMIT ?", (limit,)
+        ).fetchall()
+        records: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            raw = json.loads(row["raw_json"] or "{}")
+            activities = raw.get("activities")
+            if not isinstance(activities, list):
+                continue
+            for activity in activities:
+                if not isinstance(activity, dict):
+                    continue
+                if activity.get("excludeFromPowerCurveReports"):
+                    continue
+                powers: dict[int, float] = {}
+                for seconds in (1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600, 7200, 18000):
+                    value = activity.get(f"maxAvgPower_{seconds}")
+                    if isinstance(value, (int, float)):
+                        powers[seconds] = float(value)
+                if not powers:
+                    continue
+                records.append(
+                    {
+                        "day": row["day"],
+                        "activity_id": activity.get("activityId"),
+                        "activity_name": activity.get("activityName"),
+                        "duration": activity.get("duration"),
+                        "powers": powers,
+                    }
+                )
+        return records
+
+    def activity_vo2max_records(self, limit: int) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT day, raw_json FROM daily_metrics ORDER BY day DESC LIMIT ?", (limit,)
+        ).fetchall()
+        records: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            raw = json.loads(row["raw_json"] or "{}")
+            activities = raw.get("activities")
+            if not isinstance(activities, list):
+                continue
+            values = []
+            names = []
+            for activity in activities:
+                if not isinstance(activity, dict):
+                    continue
+                value = activity.get("vO2MaxValue")
+                if isinstance(value, (int, float)):
+                    values.append(float(value))
+                    if activity.get("activityName"):
+                        names.append(str(activity.get("activityName")))
+            if values:
+                records.append(
+                    {
+                        "day": row["day"],
+                        "vo2max": round(sum(values) / len(values), 1),
+                        "activity_count": len(values),
+                        "activity_name": names[0] if names else None,
+                    }
+                )
+        return records
+
+    def activity_training_load_records(self, limit: int) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT day, raw_json FROM daily_metrics ORDER BY day DESC LIMIT ?", (limit,)
+        ).fetchall()
+        records: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            raw = json.loads(row["raw_json"] or "{}")
+            activities = raw.get("activities")
+            if not isinstance(activities, list):
+                continue
+            tss_total = 0.0
+            if_weighted_sum = 0.0
+            if_weight = 0.0
+            activity_count = 0
+            for activity in activities:
+                if not isinstance(activity, dict):
+                    continue
+                tss = activity.get("trainingStressScore")
+                intensity_factor = activity.get("intensityFactor")
+                duration = activity.get("duration")
+                weight = float(duration) if isinstance(duration, (int, float)) and duration > 0 else 1.0
+                if isinstance(tss, (int, float)):
+                    tss_total += float(tss)
+                    activity_count += 1
+                if isinstance(intensity_factor, (int, float)):
+                    if_weighted_sum += float(intensity_factor) * weight
+                    if_weight += weight
+                    activity_count += 1 if not isinstance(tss, (int, float)) else 0
+            if tss_total > 0 or if_weight > 0:
+                records.append(
+                    {
+                        "day": row["day"],
+                        "tss": round(tss_total, 1) if tss_total > 0 else None,
+                        "intensity_factor": round(if_weighted_sum / if_weight, 3) if if_weight else None,
+                        "activity_count": activity_count,
+                    }
+                )
+        return records

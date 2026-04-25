@@ -37,7 +37,14 @@ def _days_from_query(path: str, default: int = 14) -> int:
 def _load_dashboard(days: int) -> dict:
     settings = Settings.from_env()
     db = CoachDB(settings.db_path)
-    return dashboard_payload(db.last_days(days), settings.ftp_watts)
+    return dashboard_payload(
+        db.last_days(days),
+        settings.ftp_watts,
+        period_power_records=db.activity_power_records(days),
+        overall_power_records=db.activity_power_records(730),
+        vo2max_records=db.activity_vo2max_records(days),
+        training_load_records=db.activity_training_load_records(days),
+    )
 
 
 def _refresh_dashboard(days: int) -> dict:
@@ -58,7 +65,14 @@ def _refresh_dashboard(days: int) -> dict:
     metrics = sync.fetch_range(days)
     for metric in metrics:
         db.upsert_daily(metric)
-    payload = dashboard_payload(db.last_days(days), settings.ftp_watts)
+    payload = dashboard_payload(
+        db.last_days(days),
+        settings.ftp_watts,
+        period_power_records=db.activity_power_records(days),
+        overall_power_records=db.activity_power_records(730),
+        vo2max_records=db.activity_vo2max_records(days),
+        training_load_records=db.activity_training_load_records(days),
+    )
     payload["sync"] = {"days": days, "synced": len(metrics)}
     return payload
 
